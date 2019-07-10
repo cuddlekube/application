@@ -15,7 +15,7 @@ Run all the images:
 
 ```
 docker-compose up
-``
+```
 
 
 
