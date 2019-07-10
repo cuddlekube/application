@@ -1,0 +1,61 @@
+version: '3.7'
+services:
+  feed-api:
+    image: feed-api
+    build:
+      context: feed-api/
+      args:
+        - app_version=v-compose-test
+        - commit-sha=sha-compose-test
+    ports:
+    - 8080:8080
+
+  list-api:
+    image: list-api
+    build:
+      context: list-api/
+      args:
+        - app_version=v-compose-test
+        - commit-sha=sha-compose-test
+    ports:
+    - 8081:8080
+
+  order-api:
+    image: order-api
+    build:
+      context: order-api/
+      args:
+        - app_version=v-compose-test
+        - commit-sha=sha-compose-test
+    ports:
+    - 8082:8080
+
+  register-api:
+    image: register-api
+    build:
+      context: register-api/
+      args:
+        - app_version=v-compose-test
+        - commit-sha=sha-compose-test
+    ports:
+    - 8083:8080
+
+  validate-api:
+    image: validate-api
+    build:
+      context: validate-api/
+      args:
+        - app_version=v-compose-test
+        - commit-sha=sha-compose-test
+    ports:
+    - 8084:8080
+
+  dummy-passthrough-api-1:
+    image: dummy-passthrough-api
+    build:
+      context: dummy-passthrough-api/
+      args:
+        - app_version=v-compose-test
+        - commit-sha=sha-compose-test
+    ports:
+    - 8085:8080
