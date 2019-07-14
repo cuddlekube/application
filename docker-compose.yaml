@@ -59,3 +59,13 @@ services:
         - commit-sha=sha-compose-test
     ports:
     - 8085:8080
+
+  public-site:
+    image: public-site
+    build:
+      context: public-site/
+      args:
+        - app_version=v-compose-test
+        - commit-sha=sha-compose-test
+    ports:
+    - 8086:8080
