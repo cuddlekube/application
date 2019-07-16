@@ -35,7 +35,6 @@ type appInfo struct {
 
 // Struct to return data
 // TODO: add fields that are relevant for the example
-
 type cuddlyKube struct {
 	CKID string `json:"ckid"`
 	Name string `json:"name"`
@@ -43,30 +42,32 @@ type cuddlyKube struct {
 
 func init() {
 	//flag.StringVar(&nsSuffixIgnore, "ns-suffix-ignore", "", "Comma separated list of namespaces that should not have the suffix applied (or env NS_SUFFIX_IGNORE)")
-
-	flag.BoolVar(&local, "local", false, "-l ")
+	flag.BoolVar(&local, "local", false, "boolean if set to true will expect dynamo to be available at localhost:8000 ")
 	flag.Parse()
 }
 
 // main function which is initialise dynamo connection and also the http server
 func main() {
 
-	log.Print("initialising dynamo")
+	log.Print("initialising dynamodb")
 
 	config := &aws.Config{
-		Region:      aws.String("ap-southeast-2"),
-		Endpoint:    aws.String("http://localhost:8000"),
-		Credentials: credentials.NewStaticCredentials("123", "123", ""),
+		Region: aws.String("ap-southeast-2"),
 	}
-	sess := session.Must(session.NewSession(config))
+	if local {
+		log.Print("connecting to local dynamodb")
+		config.Endpoint = aws.String("http://localhost:8000")
+		config.Credentials = credentials.NewStaticCredentials("123", "123", "")
+	}
 
+	sess := session.Must(session.NewSession(config))
 	dynamo = dynamodb.New(sess)
 
 	log.Print("starting the api")
 
 	r := mux.NewRouter()
-	r.HandleFunc("/health", health).Methods(http.MethodGet)
 	r.HandleFunc("/", register).Methods(http.MethodPost)
+	r.HandleFunc("/health", health).Methods(http.MethodGet)
 
 	s := &http.Server{
 		Handler:      r,
@@ -134,7 +135,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, map[string]string{"message": fmt.Sprintf("item %s, is registered", item.Name)})
+	respondWithJSON(w, http.StatusCreated, map[string]string{"message": fmt.Sprintf("item %s, is registered", ck.Name)})
 }
 
 // helper for responding with error
