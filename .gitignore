@@ -1,1 +1,8 @@
 **/.idea
+dummy-passthrough-api/dummy-passthrough-api
+feed-api/feed-api
+list-api/list-api
+order-api/order-api
+public-site/public-site
+register-api/register-api
+validate-api/validate-api
