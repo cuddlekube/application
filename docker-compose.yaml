@@ -1,5 +1,6 @@
 version: '3.7'
 services:
+
   feed-api:
     image: feed-api
     build:
@@ -69,3 +70,8 @@ services:
         - commit-sha=sha-compose-test
     ports:
     - 8086:8080
+  
+  dynamolocal:
+    image: amazon/dynamodb-local
+    ports:
+      - "8000:8000"
