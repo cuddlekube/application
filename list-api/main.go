@@ -23,6 +23,7 @@ var SHA = "a1b2c3def"
 var TableName = "cuddlykube"
 var dynamo *dynamodb.DynamoDB
 var local bool
+var dynamoURL string
 
 type app struct {
 	AppName []appInfo `json:"list-api"`
@@ -33,29 +34,41 @@ type appInfo struct {
 }
 
 
-// Struct to return data
-// TODO: add fields that are relevant for the example
+// cuddly kube that matches the cuddly kube table
+//- ckid -- HASH
+//- name -- String
+//- type -- String (aws server classes?)
+//- service -- int (e.g 20 years in service)
+//- happiness -- int (1 being shit 10 being super happy)
+//- petname -- String
+//- os -- String (linux, windows)
+//- image -- String
 type cuddlyKube struct {
-	CKID string `json:"ckid"`
-	Name string `json:"name"`
+	CKID      string `json:"ckid"`
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	Service   int    `json:"service"`
+	Happiness int    `json:"happiness"`
+	Petname   string `json:"petname"`
+	OS        string `json:"os"`
+	Image     string `json:"image"`
 }
 
 func init() {
-	flag.BoolVar(&local, "local", false, "boolean if set to true will expect dynamo to be available at localhost:8000 ")
+	flag.StringVar(&dynamoURL, "url", "localhost", "default is localhost:8000 override with flag")
+	flag.BoolVar(&local, "local", false, "boolean if set to true will expect dynamo to be available locally")
 	flag.Parse()
+
 }
 
-
 func main() {
-
 	log.Print("initialising dynamodb")
-
 	config := &aws.Config{
 		Region: aws.String("ap-southeast-2"),
 	}
 	if local {
 		log.Print("connecting to local dynamodb")
-		config.Endpoint = aws.String("http://localhost:8000")
+		config.Endpoint = aws.String(fmt.Sprintf("http://%s:8000",dynamoURL))
 		config.Credentials = credentials.NewStaticCredentials("123", "123", "")
 	}
 
@@ -109,7 +122,7 @@ func list(w http.ResponseWriter, r *http.Request) {
 	}
 	o, err := dynamo.Scan(i)
 	if err != nil {
-		msg := fmt.Sprintf("error putting item into cuddlykube table, %s ", err.Error())
+		msg := fmt.Sprintf("error getting items from cuddlykube table, %s ", err.Error())
 		log.Println(msg)
 		respondWithError(w, http.StatusInternalServerError, msg)
 		return
