@@ -26,7 +26,7 @@ var local bool
 var dynamoURL string
 
 type app struct {
-	AppName []appInfo `json:"feed-api"`
+	AppName []appInfo `json:"happiness-api"`
 }
 type appInfo struct {
 	Version       string `json:"version"`
@@ -111,7 +111,7 @@ func health(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, infoJSON)
 }
 
-func feed(w http.ResponseWriter, r *http.Request) {
+func happiness(w http.ResponseWriter, r *http.Request) {
 	var ck cuddlyKube
 
 	// unmarshal the request body into cuddly kube object
@@ -122,47 +122,47 @@ func feed(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	//
-	//input := &dynamodb.UpdateItemInput{
-	//	ExpressionAttributeNames: map[string]*string{
-	//		"#H": aws.String("happiness"),
-	//	},
-	//	ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-	//		":h": {
-	//			N: aws.String("1"),
-	//		},
-	//	},
-	//	Key: map[string]*dynamodb.AttributeValue{
-	//		"ckid": {
-	//			S: aws.String("ck1"),
-	//		},
-	//	},
-	//	ReturnValues: aws.String("ALL_NEW"),
-	//	TableName:        aws.String(TableName),
-	//	UpdateExpression: aws.String("SET #H = #H + :h"),
-	//}
-	//
-	//
-	//// call the put item api
-	//output, err := dynamo.UpdateItem(input)
-	//if err != nil {
-	//	msg := fmt.Sprintf("error putting item into cuddlykube table, %s ", err.Error())
-	//	log.Println(msg)
-	//	respondWithError(w, http.StatusBadRequest, msg)
-	//	return
-	//}
-	//
-	//var rCK cuddlyKube
-	//
-	//err = dynamodbattribute.UnmarshalMap(output.Attributes, &rCK)
-	//if err != nil {
-	//	msg := fmt.Sprintf("error unmarshaling map into ck, %s ", err.Error())
-	//	log.Println(msg)
-	//	respondWithError(w, http.StatusBadRequest, msg)
-	//	return
-	//}
 
-	//respondWithJSON(w, http.StatusCreated, rCK)
+	input := &dynamodb.UpdateItemInput{
+		ExpressionAttributeNames: map[string]*string{
+			"#H": aws.String("happiness"),
+		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":h": {
+				N: aws.String("1"),
+			},
+		},
+		Key: map[string]*dynamodb.AttributeValue{
+			"ckid": {
+				S: aws.String("ck1"),
+			},
+		},
+		ReturnValues: aws.String("ALL_NEW"),
+		TableName:        aws.String(TableName),
+		UpdateExpression: aws.String("SET #H = #H + :h"),
+	}
+
+
+	// call the put item api
+	output, err := dynamo.UpdateItem(input)
+	if err != nil {
+		msg := fmt.Sprintf("error putting item into cuddlykube table, %s ", err.Error())
+		log.Println(msg)
+		respondWithError(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	var rCK cuddlyKube
+
+	err = dynamodbattribute.UnmarshalMap(output.Attributes, &rCK)
+	if err != nil {
+		msg := fmt.Sprintf("error unmarshaling map into ck, %s ", err.Error())
+		log.Println(msg)
+		respondWithError(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, rCK)
 }
 
 // helper for responding with error
