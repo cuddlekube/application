@@ -17,7 +17,7 @@ feed-flow-up:
 	@docker-compose up -d feed-api
 	@docker-compose ps
 	# this step makes it non-idempotent
-	@bin/init-feed-flow.sh
+	@bin/local-dynamo-init.sh
 
 feed-flow-down:
 	@docker-compose down

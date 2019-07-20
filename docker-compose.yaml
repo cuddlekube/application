@@ -12,8 +12,6 @@ services:
     - -local
     - -endpoint-url
     - "http://dynamolocal:8000"
-    - -h
-    - "http://happiness-api:8080"
     ports:
     - 8088:8080
 
