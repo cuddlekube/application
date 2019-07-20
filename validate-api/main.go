@@ -28,7 +28,7 @@ func main() {
 	log.Print("starting the api")
 	r := mux.NewRouter()
 	r.HandleFunc("/", root)
-	r.HandleFunc("/version", version)
+	r.HandleFunc("/health", health)
 
 	s := &http.Server{
 		Handler:      r,
@@ -40,7 +40,7 @@ func main() {
 	log.Fatal(s.ListenAndServe())
 }
 
-func version(w http.ResponseWriter, r *http.Request) {
+func health(w http.ResponseWriter, r *http.Request) {
 	info := appInfo{
 		Version:       Ver,
 		LastCommitSHA: SHA,

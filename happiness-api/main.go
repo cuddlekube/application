@@ -9,14 +9,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gorilla/mux"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+
+	"github.com/gorilla/mux"
+
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 )
-
 
 var Ver = "1.0.0"
 var SHA = "a1b2c3def"
@@ -26,13 +26,12 @@ var local bool
 var dynamoURL string
 
 type app struct {
-	AppName []appInfo `json:"list-api"`
+	AppName []appInfo `json:"happiness-api"`
 }
 type appInfo struct {
 	Version       string `json:"version"`
 	LastCommitSHA string `json:"lastcommitsha"`
 }
-
 
 // cuddly kube that matches the cuddly kube table
 //- ckid -- HASH
@@ -55,14 +54,14 @@ type cuddlyKube struct {
 }
 
 func init() {
-	flag.StringVar(&dynamoURL, "url", "http://localhost:8000", "default is localhost:8000 override with flag")
 	flag.BoolVar(&local, "local", false, "boolean if set to true will expect dynamo to be available locally")
+	flag.StringVar(&dynamoURL, "endpoint-url", "http://localhost:8000", "default is localhost:8000 override with flag")
 	flag.Parse()
-
 }
 
 func main() {
 	log.Print("initialising dynamodb")
+
 	config := &aws.Config{
 		Region: aws.String("ap-southeast-2"),
 	}
@@ -78,7 +77,7 @@ func main() {
 	log.Print("starting the api")
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", list).Methods(http.MethodGet)
+	r.HandleFunc("/", happiness).Methods(http.MethodPost)
 	r.HandleFunc("/health", health).Methods(http.MethodGet)
 
 	s := &http.Server{
@@ -112,34 +111,61 @@ func health(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, infoJSON)
 }
 
-// list scans the dynamo db table and returns all result
-// this can be potentially spammed
-// look into query with paging etc
-func list(w http.ResponseWriter, r *http.Request) {
+func happiness(w http.ResponseWriter, r *http.Request) {
+	var ck cuddlyKube
 
-	i := &dynamodb.ScanInput{
-		TableName: aws.String(TableName),
+	// unmarshal the request body into cuddly kube object
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&ck); err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid request payload")
+		return
 	}
-	o, err := dynamo.Scan(i)
+	defer r.Body.Close()
+
+
+	input := &dynamodb.UpdateItemInput{
+		ExpressionAttributeNames: map[string]*string{
+			"#H": aws.String("happiness"),
+		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":h": {
+				N: aws.String("1"),
+			},
+		},
+		Key: map[string]*dynamodb.AttributeValue{
+			"ckid": {
+				S: aws.String("ck1"),
+			},
+		},
+		ReturnValues: aws.String("ALL_NEW"),
+		TableName:        aws.String(TableName),
+		UpdateExpression: aws.String("SET #H = #H + :h"),
+	}
+
+
+	// call the put item api
+	output, err := dynamo.UpdateItem(input)
 	if err != nil {
-		msg := fmt.Sprintf("error getting items from cuddlykube table, %s ", err.Error())
+		msg := fmt.Sprintf("error putting item into cuddlykube table, %s ", err.Error())
 		log.Println(msg)
-		respondWithError(w, http.StatusInternalServerError, msg)
+		respondWithError(w, http.StatusBadRequest, msg)
 		return
 	}
 
-	cks := make(map[int]cuddlyKube)
-	for k, v := range o.Items {
-		var ck cuddlyKube
-		err = dynamodbattribute.UnmarshalMap(v, &ck)
-		if err  != nil {
-			msg := fmt.Sprintf("error unmarshaling item into cuddlykube, %s ", err.Error())
-			log.Println(msg)
-			continue
-		}
-		cks[k] = ck
+	log.Println("updated item in cuddlykube table")
+	var rCK cuddlyKube
+
+	err = dynamodbattribute.UnmarshalMap(output.Attributes, &rCK)
+	if err != nil {
+		msg := fmt.Sprintf("error unmarshaling map into ck, %s ", err.Error())
+		log.Println(msg)
+		respondWithError(w, http.StatusBadRequest, msg)
+		return
 	}
-	respondWithJSON(w, http.StatusOK, cks)
+
+	log.Println("translated to return object")
+
+	respondWithJSON(w, http.StatusCreated, rCK)
 }
 
 // helper for responding with error
