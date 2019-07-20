@@ -7,7 +7,7 @@ export AWS_ACCESS_KEY_ID=123
 export AWS_SECRET_ACCESS_KEY=123
 export AWS_DEFAULT_REGION=ap-southeast-2
 
-# create dynamodb table 
+# create dynamodb table
 aws dynamodb create-table \
     --table-name cuddlykube \
     --attribute-definitions AttributeName=ckid,AttributeType=S \

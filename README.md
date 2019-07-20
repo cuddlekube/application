@@ -2,7 +2,7 @@
 Applications to be used for the CCAU demo
 
 
-Boiler plate golang based apis with `/` and `/version` endpoints. 
+Boiler plate golang based apis with `/` and `/version` endpoints.
 
 
 Build all docker images:
@@ -44,9 +44,9 @@ Dynamo Schema
 - type -- String (aws server classes?)
 - service -- int (e.g 20 years in service)
 - happiness -- int (1 being shit 10 being super happy)
-- petname -- String 
+- petname -- String
 - os -- String (linux, windows)
-- image -- String 
+- image -- String
 ```
 Curl request to register
 

@@ -12,7 +12,7 @@ deploy:
 feed-flow-up:
 	@docker-compose up -d dynamolocal
 	@docker-compose up -d register-api
-	@docker-compose up -d list-api 
+	@docker-compose up -d list-api
 	@docker-compose up -d happiness-api
 	@docker-compose up -d feed-api
 	@docker-compose ps

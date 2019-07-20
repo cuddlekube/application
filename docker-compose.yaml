@@ -12,7 +12,7 @@ services:
     - -local
     - -endpoint-url
     - "http://dynamolocal:8000"
-    - -h 
+    - -h
     - "http://happiness-api:8080"
     ports:
     - 8088:8080
@@ -100,7 +100,7 @@ services:
     - "http://dynamolocal:8000"
     ports:
     - 8086:8080
-  
+
   happiness-api:
     image: happiness-api
     build:
