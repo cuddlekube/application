@@ -1,4 +1,4 @@
-module feed-api
+module happiness-api
 
 go 1.12
 
