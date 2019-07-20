@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -24,6 +25,7 @@ var TableName = "cuddlykube"
 var dynamo *dynamodb.DynamoDB
 var local bool
 var dynamoURL string
+var happiness string
 
 type app struct {
 	AppName []appInfo `json:"feed-api"`
@@ -55,8 +57,10 @@ type cuddlyKube struct {
 
 func init() {
 	flag.BoolVar(&local, "local", false, "boolean if set to true will expect dynamo to be available locally")
-	flag.StringVar(&dynamoURL, "endpoint-url", "localhost", "default is localhost:8000 override with flag")
+	flag.StringVar(&dynamoURL, "endpoint-url", "http://localhost:8000", "default is localhost:8000 override with flag")
+	flag.StringVar(&happiness, "h", "http://localhost:8087", "default is localhost:8000 override with flag")
 	flag.Parse()
+
 }
 
 func main() {
@@ -67,7 +71,7 @@ func main() {
 	}
 	if local {
 		log.Print("connecting to local dynamodb")
-		config.Endpoint = aws.String(fmt.Sprintf("http://%s:8000", dynamoURL))
+		config.Endpoint = aws.String(dynamoURL)
 		config.Credentials = credentials.NewStaticCredentials("123", "123", "")
 	}
 
@@ -122,47 +126,41 @@ func feed(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	//
-	//input := &dynamodb.UpdateItemInput{
-	//	ExpressionAttributeNames: map[string]*string{
-	//		"#H": aws.String("happiness"),
-	//	},
-	//	ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
-	//		":h": {
-	//			N: aws.String("1"),
-	//		},
-	//	},
-	//	Key: map[string]*dynamodb.AttributeValue{
-	//		"ckid": {
-	//			S: aws.String("ck1"),
-	//		},
-	//	},
-	//	ReturnValues: aws.String("ALL_NEW"),
-	//	TableName:        aws.String(TableName),
-	//	UpdateExpression: aws.String("SET #H = #H + :h"),
-	//}
-	//
-	//
-	//// call the put item api
-	//output, err := dynamo.UpdateItem(input)
-	//if err != nil {
-	//	msg := fmt.Sprintf("error putting item into cuddlykube table, %s ", err.Error())
-	//	log.Println(msg)
-	//	respondWithError(w, http.StatusBadRequest, msg)
-	//	return
-	//}
-	//
-	//var rCK cuddlyKube
-	//
-	//err = dynamodbattribute.UnmarshalMap(output.Attributes, &rCK)
-	//if err != nil {
-	//	msg := fmt.Sprintf("error unmarshaling map into ck, %s ", err.Error())
-	//	log.Println(msg)
-	//	respondWithError(w, http.StatusBadRequest, msg)
-	//	return
-	//}
+	tr := &http.Transport{
+		MaxIdleConns:    10,
+		IdleConnTimeout: 30 * time.Second,
+	}
 
-	//respondWithJSON(w, http.StatusCreated, rCK)
+	client := &http.Client{Transport: tr}
+
+	buf := []byte(`{"ckid":"` + ck.CKID + `"}`)
+
+	req, err := http.NewRequest(http.MethodPost, happiness, bytes.NewBuffer(buf))
+	if err != nil {
+		msg := fmt.Sprintf("error creating new http request, %s ", err.Error())
+		log.Println(msg)
+		respondWithError(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	log.Printf("new http request created")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		msg := fmt.Sprintf("error calling the happiness api, %s ", err.Error())
+		log.Println(msg)
+		respondWithError(w, http.StatusBadRequest, msg)
+		return
+	}
+
+	log.Printf("called the happiness api to update ck: %s 's happiness", ck.CKID)
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	var rCK cuddlyKube
+	log.Printf("resp body %v", json.Unmarshal(body, &rCK))
+	respondWithJSON(w, http.StatusCreated, rCK)
 }
 
 // helper for responding with error

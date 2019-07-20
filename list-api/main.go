@@ -55,7 +55,7 @@ type cuddlyKube struct {
 }
 
 func init() {
-	flag.StringVar(&dynamoURL, "url", "localhost", "default is localhost:8000 override with flag")
+	flag.StringVar(&dynamoURL, "url", "http://localhost:8000", "default is localhost:8000 override with flag")
 	flag.BoolVar(&local, "local", false, "boolean if set to true will expect dynamo to be available locally")
 	flag.Parse()
 
@@ -68,7 +68,7 @@ func main() {
 	}
 	if local {
 		log.Print("connecting to local dynamodb")
-		config.Endpoint = aws.String(fmt.Sprintf("http://%s:8000",dynamoURL))
+		config.Endpoint = aws.String(dynamoURL)
 		config.Credentials = credentials.NewStaticCredentials("123", "123", "")
 	}
 

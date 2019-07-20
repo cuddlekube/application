@@ -1,4 +1,4 @@
-.PHONY: cfn-lint deploy-logs-global deploy-vpc-demo
+.PHONY: build run deploy feed-flow-up feed-flow-down
 
 build:
 	@bin/build.sh
@@ -8,3 +8,16 @@ run:
 
 deploy:
 	@bin/deploy.sh
+
+feed-flow-up:
+	@docker-compose up -d dynamolocal
+	@docker-compose up -d register-api
+	@docker-compose up -d list-api 
+	@docker-compose up -d happiness-api
+	@docker-compose up -d feed-api
+	@docker-compose ps
+	# this step makes it non-idempotent
+	@bin/init-feed-flow.sh
+
+feed-flow-down:
+	@docker-compose down

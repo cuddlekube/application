@@ -55,7 +55,7 @@ type cuddlyKube struct {
 
 func init() {
 	flag.BoolVar(&local, "local", false, "boolean if set to true will expect dynamo to be available locally")
-	flag.StringVar(&dynamoURL, "endpoint-url", "localhost", "default is localhost:8000 override with flag")
+	flag.StringVar(&dynamoURL, "endpoint-url", "http://localhost:8000", "default is localhost:8000 override with flag")
 	flag.Parse()
 }
 
@@ -67,7 +67,7 @@ func main() {
 	}
 	if local {
 		log.Print("connecting to local dynamodb")
-		config.Endpoint = aws.String(fmt.Sprintf("http://%s:8000", dynamoURL))
+		config.Endpoint = aws.String(dynamoURL)
 		config.Credentials = credentials.NewStaticCredentials("123", "123", "")
 	}
 
@@ -77,7 +77,7 @@ func main() {
 	log.Print("starting the api")
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", feed).Methods(http.MethodPost)
+	r.HandleFunc("/", happiness).Methods(http.MethodPost)
 	r.HandleFunc("/health", health).Methods(http.MethodGet)
 
 	s := &http.Server{
@@ -152,6 +152,7 @@ func happiness(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Println("updated item in cuddlykube table")
 	var rCK cuddlyKube
 
 	err = dynamodbattribute.UnmarshalMap(output.Attributes, &rCK)
@@ -161,6 +162,8 @@ func happiness(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, msg)
 		return
 	}
+
+	log.Println("translated to return object")
 
 	respondWithJSON(w, http.StatusCreated, rCK)
 }

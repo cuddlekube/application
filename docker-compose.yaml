@@ -12,8 +12,10 @@ services:
     - -local
     - -endpoint-url
     - "http://dynamolocal:8000"
+    - -h 
+    - "http://happiness-api:8080"
     ports:
-    - 8080:8080
+    - 8088:8080
 
   list-api:
     image: list-api
@@ -25,7 +27,7 @@ services:
     command:
     - -local
     - -url
-    - "dynamolocal"
+    - "http://dynamolocal:8000"
     ports:
     - 8081:8080
 
@@ -99,7 +101,22 @@ services:
     ports:
     - 8086:8080
   
+  happiness-api:
+    image: happiness-api
+    build:
+      context: happiness-api/
+      args:
+      - app_version=v-compose-test
+      - commit-sha=sha-compose-test
+    command:
+    - -local
+    - -endpoint-url
+    - "http://dynamolocal:8000"
+    ports:
+    - 8087:8080
+
   dynamolocal:
     image: amazon/dynamodb-local
     ports:
       - "8000:8000"
+
