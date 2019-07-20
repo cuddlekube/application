@@ -1,4 +1,4 @@
-module validate-api
+module public-site
 
 go 1.12
 
