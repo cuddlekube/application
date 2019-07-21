@@ -59,6 +59,11 @@ type cuddlyKube struct {
 	Image     string `json:"image"`
 }
 
+type result struct {
+	Valid   bool     `json:"valid"`
+	Message []string `json:"message"`
+}
+
 func init() {
 	flag.BoolVar(&local, "local", false, "boolean if set to true will expect dynamo to be available at localhost:8000 ")
 	flag.StringVar(&dynamoURL, "endpoint-url", "http://localhost:8000", "default is localhost:8000 override with flag")
@@ -134,6 +139,19 @@ func register(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
+	valid, err := validate(ck)
+	if err != nil {
+		log.Println(err.Error())
+		respondWithError(w, http.StatusBadRequest, err.Error())
+	}
+
+	if !valid {
+		msg := fmt.Sprintf("please ensure that the cuddly kube object has Name, OS and Type values set")
+		log.Println(msg)
+		respondWithError(w, http.StatusBadRequest, msg)
+		return
+	}
+
 	// marshal cuddly kube into the dyanmodb attribute value map
 	av, err := dynamodbattribute.MarshalMap(ck)
 	if err != nil {
@@ -141,12 +159,6 @@ func register(w http.ResponseWriter, r *http.Request) {
 		log.Println(msg)
 		respondWithError(w, http.StatusBadRequest, msg)
 		return
-	}
-
-	err = validate(ck)
-	if err != nil {
-		log.Println(err.Error())
-		respondWithError(w, http.StatusBadRequest, err.Error())
 	}
 
 	// create putItemInput like every freaking thing in aws go sdk
@@ -176,7 +188,7 @@ func validate(ck cuddlyKube) (bool, error) {
 	client := &http.Client{Transport: tr}
 	buf, err := json.Marshal(ck)
 	if err != nil {
-		return false, fmt.Errorf("unaebl to marshal ck into byte slice: %s", err.Error())
+		return false, fmt.Errorf("unable to marshal ck into byte slice: %s", err.Error())
 	}
 
 	req, err := http.NewRequest(http.MethodPost, validateURL, bytes.NewBuffer(buf))
@@ -188,18 +200,23 @@ func validate(ck cuddlyKube) (bool, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return false, fmt.Errorf("error calling the happiness api, %s ", err.Error())
+		return false, fmt.Errorf("error calling the validate api, %s ", err.Error())
 	}
 
-	log.Printf("called the happiness api to update ck: %s 's happiness", ck.CKID)
+	log.Printf("called the validate-api to validate ck: %s", ck.CKID)
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 
-	var valid bool
-	log.Printf("resp body %v", json.Unmarshal(body, &valid))
+	var v result
+	err = json.Unmarshal(body, &v)
+	if err != nil {
+		return false, fmt.Errorf("error unmarshaling validate-api response %s ", err.Error())
+	}
 
-	return valid, nil
+	log.Printf("resp body %v", v)
+
+	return v.Valid, nil
 }
 
 // helper for responding with error
