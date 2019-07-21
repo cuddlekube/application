@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -24,6 +27,8 @@ var TableName = "cuddlykube"
 var dynamo *dynamodb.DynamoDB
 var local bool
 var dynamoURL string
+var validateURL = "http://validate-api%s:8080"
+var internalDomain string
 
 type app struct {
 	AppName []appInfo `json:"register-api"`
@@ -58,6 +63,12 @@ func init() {
 	flag.BoolVar(&local, "local", false, "boolean if set to true will expect dynamo to be available at localhost:8000 ")
 	flag.StringVar(&dynamoURL, "endpoint-url", "http://localhost:8000", "default is localhost:8000 override with flag")
 	flag.Parse()
+
+	if os.Getenv("INTERNAL_DOMAIN") != "" {
+		internalDomain = "." + os.Getenv("INTERNAL_DOMAIN")
+	}
+	validateURL = fmt.Sprintf(validateURL, internalDomain)
+
 }
 
 func main() {
@@ -132,6 +143,12 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = validate(ck)
+	if err != nil {
+		log.Println(err.Error())
+		respondWithError(w, http.StatusBadRequest, err.Error())
+	}
+
 	// create putItemInput like every freaking thing in aws go sdk
 	input := &dynamodb.PutItemInput{
 		Item:      av,
@@ -148,6 +165,41 @@ func register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondWithJSON(w, http.StatusCreated, map[string]string{"message": fmt.Sprintf("item %s, is registered", ck.Name)})
+}
+
+func validate(ck cuddlyKube) (bool, error) {
+	tr := &http.Transport{
+		MaxIdleConns:    10,
+		IdleConnTimeout: 30 * time.Second,
+	}
+
+	client := &http.Client{Transport: tr}
+	buf, err := json.Marshal(ck)
+	if err != nil {
+		return false, fmt.Errorf("unaebl to marshal ck into byte slice: %s", err.Error())
+	}
+
+	req, err := http.NewRequest(http.MethodPost, validateURL, bytes.NewBuffer(buf))
+	if err != nil {
+		return false, fmt.Errorf("error creating new http request, %s ", err.Error())
+	}
+
+	log.Printf("new http request created")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false, fmt.Errorf("error calling the happiness api, %s ", err.Error())
+	}
+
+	log.Printf("called the happiness api to update ck: %s 's happiness", ck.CKID)
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	var valid bool
+	log.Printf("resp body %v", json.Unmarshal(body, &valid))
+
+	return valid, nil
 }
 
 // helper for responding with error
