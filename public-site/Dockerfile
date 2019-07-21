@@ -18,12 +18,14 @@ RUN go mod download
 
 ADD ./ /app
 
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.Ver=${VERSION} -X main.SHA=${COMMIT_SHA} -w -extldflags '-static'" -o golang-api
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.Ver=${VERSION} -X main.SHA=${COMMIT_SHA} -w -extldflags '-static'" -o site
 
 FROM alpine
 WORKDIR /app
-COPY --from=build /app/golang-api /app
+COPY --from=build /app/site /app
+COPY --from=build /app/tmpl /app/tmpl
+COPY --from=build /app/img /app/img
 
-ENTRYPOINT ["/app/golang-api"]
+ENTRYPOINT ["/app/site"]
 
 EXPOSE 8080

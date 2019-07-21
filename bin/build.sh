@@ -3,7 +3,7 @@
 set -e
 
 commit_sha=$(git rev-list -1 HEAD)
-app_version=1.0.0
+app_version=0.0.1
 
 for dir in dummy-passthrough-api feed-api list-api order-api register-api validate-api public-site happiness-api
 do

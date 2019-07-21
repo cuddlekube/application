@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+	<title>Cuddle Kube</title>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#">Cuddle Kube</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  <div class="collapse navbar-collapse" id="navbarSupportedContent">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item">
+        <a class="nav-link" href="/">Home</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="/list">Resident servers</a>
+      </li>
+      <li class="nav-item active">
+        <a class="nav-link" href="/register">Request admittance</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link disabled" href="#">Field Trips</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="#">About us</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+<div class="container">
+  <div class="row">
+    <h1>Request admittance</h1>
+  </div>
+  <div class="fluid-row">
+    <p>Here you can request admittance (either for yourself if you're a server, or for your non-sentient server).</p>
+    <p>Please be aware that due to the high number of requests we've been receiving during live demos, there is a manual review stage</p>
+  </div>
+  <div class="row">
+    <form>
+      <div class="form-group">
+        <label for="Name">Server name</label>
+        <input type="text" class="form-control" id="Name" aria-describedby="nameHelp" placeholder="Super Awesome Server">
+        <small id="nameHelp" class="form-text text-muted">The regular name your server goes by.</small>
+      </div>
+      <div class="form-group">
+        <label for="type">Server type</label>
+        <input type="text" class="form-control" id="type" aria-describedby="typeHelp" placeholder="Azure D4 v3">
+        <small id="typeHelp" class="form-text text-muted">The type of server.</small>
+      </div>
+      <div class="form-group">
+        <label for="age">Age</label>
+        <input type="number" class="form-control" id="age" aria-describedby="ageHelp" placeholder="2">
+        <small id="ageHelp" class="form-text text-muted">How many years has your server been in service.</small>
+      </div>
+      <div class="form-group">
+        <label for="pet">Pet pet</label>
+        <input type="text" class="form-control" id="pet" aria-describedby="petHelp" placeholder="Athena">
+        <small id="petHelp" class="form-text text-muted">When your server was treated like a pet, what name did it use?</small>
+      </div>
+      <div class="form-group">
+        <label for="os">Operating System</label>
+        <input type="text" class="form-control" id="os" aria-describedby="osHelp" placeholder="OpenBSD">
+        <small id="osHelp" class="form-text text-muted">Due to the destruction caused by religious wars, we try to keep servers with different OSs apart.</small>
+      </div>
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+</html>
