@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +13,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const STATIC_DIR = "/img/"
+const imageDir = "/img/"
 
 var listAPIURL = "http://list-api%s:8080"
 var feedAPIURL = "http://feed-api%s:8080"
@@ -61,11 +62,12 @@ func main() {
 	listAPIURL = fmt.Sprintf(listAPIURL, internalDomain)
 	log.Print("starting the api")
 	r := mux.NewRouter().StrictSlash(true)
-	r.PathPrefix(STATIC_DIR).
-		Handler(http.StripPrefix(STATIC_DIR, http.FileServer(http.Dir("."+STATIC_DIR))))
+	r.PathPrefix(imageDir).
+		Handler(http.StripPrefix(imageDir, http.FileServer(http.Dir("."+imageDir))))
 	r.HandleFunc("/", root)
 	r.HandleFunc("/list", list)
-	r.HandleFunc("/register", register)
+	r.HandleFunc("/register", register).Methods(http.MethodGet)
+	r.HandleFunc("/register", sendregistration).Methods(http.MethodPost)
 	r.HandleFunc("/health", version)
 
 	s := &http.Server{
@@ -126,44 +128,29 @@ func list(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 	}
 
-	// res, err := http.Get(listAPIURL)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer res.Body.Close()
-	// if res.StatusCode != 200 {
-	// 	log.Fatalf("status code error: %d %s", res.StatusCode, res.Status)
-	// }
+	serviceclient := http.Client{}
 
-	mock := `[
-		{
-			"ckid": "1234",
-			"name": "My first server",
-			"type": "x1.32xlarge",
-			"service": 2,
-			"happiness": 4,
-			"petname": "Titan",
-			"os": "Linux",
-			"image": "/img/x1.png"
-		},
-		{
-			"ckid": "2345",
-			"name": "Real ARM server",
-			"type": "a1.large",
-			"service": 2,
-			"happiness": 4,
-			"petname": "Tiny",
-			"os": "Linux",
-			"image": "/img/a1.png"
-		}
-	]`
-	parsedServers := []cuddlyKube{}
-	if err := json.Unmarshal([]byte(mock), &parsedServers); err != nil {
+	req, err := http.NewRequest(http.MethodGet, listAPIURL, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+	res, getErr := serviceclient.Do(req)
+	if getErr != nil {
+		log.Fatal(getErr)
+	}
+
+	body, readErr := ioutil.ReadAll(res.Body)
+	if readErr != nil {
+		log.Fatal(readErr)
+	}
+
+	parsedServers := make(map[int]cuddlyKube)
+	if err := json.Unmarshal([]byte(body), &parsedServers); err != nil {
 		panic(err)
 	}
 
 	data := struct {
-		Servers []cuddlyKube
+		Servers map[int]cuddlyKube
 	}{}
 	data.Servers = parsedServers
 
@@ -186,4 +173,8 @@ func register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func sendregistration(w http.ResponseWriter, r *http.Request) {
+	// nothing ye
 }
