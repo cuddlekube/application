@@ -22,6 +22,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-X main.Ver=${VERSION} -X main.S
 
 FROM alpine
 WORKDIR /app
+RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/
 COPY --from=build /app/golang-api /app
 
 ENTRYPOINT ["/app/golang-api"]
