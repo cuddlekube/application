@@ -10,14 +10,9 @@ for dir in dummy-passthrough-api feed-api list-api order-api register-api valida
 do
 	if [ -d "$dir" ]
 	then
-<<<<<<< HEAD
-		docker tag ${dir}:latest 183741349056.dkr.ecr.ap-southeast-2.amazonaws.com/${dir}:${app_version}
-        docker push 183741349056.dkr.ecr.ap-southeast-2.amazonaws.com/${dir}:${app_version}
-=======
 		docker tag ${dir}:latest 183741349056.dkr.ecr.ap-southeast-2.amazonaws.com/${dir}:latest
 		docker tag ${dir}:latest 183741349056.dkr.ecr.ap-southeast-2.amazonaws.com/${dir}:${commit_sha}
         docker push 183741349056.dkr.ecr.ap-southeast-2.amazonaws.com/${dir}:latest
         docker push 183741349056.dkr.ecr.ap-southeast-2.amazonaws.com/${dir}:${commit_sha}
->>>>>>> master
     fi
 done
