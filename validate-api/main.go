@@ -55,6 +55,11 @@ type cuddlyKube struct {
 	Image     string `json:"image"`
 }
 
+type result struct {
+	Valid   bool     `json:"valid"`
+	Message []string `json:"message"`
+}
+
 func init() {
 	flag.BoolVar(&local, "local", false, "boolean if set to true will expect dynamo to be available at localhost:8000 ")
 	flag.StringVar(&dynamoURL, "endpoint-url", "http://localhost:8000", "default is localhost:8000 override with flag")
@@ -120,18 +125,38 @@ func health(w http.ResponseWriter, r *http.Request) {
 }
 
 func validate(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	log.Println("received request for validation")
+	var ck cuddlyKube
 
-	hw, err := json.Marshal(helloWorld{"Hello World!"})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	// unmarshal the request body into cuddly kube object
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&ck); err != nil {
+		respondWithError(w, http.StatusBadRequest, "invalid request payload")
+		return
+	}
+	defer r.Body.Close()
+
+	var res result
+	res.Valid = true
+
+	// validation chain
+	if ck.Name == "" {
+		res.Valid = false
+		res.Message = append(res.Message, "cuddly kube name not set")
 	}
 
-	_, err = w.Write(hw)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if ck.OS == "" {
+		res.Valid = false
+		res.Message = append(res.Message, "cuddly kube os not set")
 	}
+
+	if ck.Type == "" {
+		res.Valid = false
+		res.Message = append(res.Message, "cuddly kube type not set")
+	}
+
+	log.Printf("cuddly kube validated with result: %s", res.Valid)
+	respondWithJSON(w, http.StatusOK, res)
 }
 
 // helper for responding with error
