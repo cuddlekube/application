@@ -96,7 +96,7 @@ func main() {
 	r.HandleFunc("/health", health).Methods(http.MethodGet)
 
 	s := &http.Server{
-		Handler:      xray.Handler(xray.NewFixedSegmentNamer("list-api"), r),
+		Handler:      xray.Handler(xray.NewFixedSegmentNamer("validate-api"), r),
 		Addr:         ":8080",
 		WriteTimeout: 10 * time.Second,
 		ReadTimeout:  10 * time.Second,

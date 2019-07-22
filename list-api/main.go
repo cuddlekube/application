@@ -73,9 +73,8 @@ func main() {
 		config.Credentials = credentials.NewStaticCredentials("123", "123", "")
 	}
 
-	sess := session.Must(session.NewSession())
-	dynamo := dynamodb.New(sess)
-	xray.AWS(dynamo.Client)
+	sess := session.Must(session.NewSession(config))
+	dynamo = dynamodb.New(sess)
 
 	log.Print("starting the api")
 
