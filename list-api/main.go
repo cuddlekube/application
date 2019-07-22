@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"log"
 	"net/http"
+	"net/http/httputil"
 	"time"
+
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 
 	"github.com/gorilla/mux"
 
@@ -15,8 +17,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-xray-sdk-go/xray"
 )
-
 
 var Ver = "1.0.0"
 var SHA = "a1b2c3def"
@@ -32,7 +34,6 @@ type appInfo struct {
 	Version       string `json:"version"`
 	LastCommitSHA string `json:"lastcommitsha"`
 }
-
 
 // cuddly kube that matches the cuddly kube table
 //- ckid -- HASH
@@ -72,8 +73,9 @@ func main() {
 		config.Credentials = credentials.NewStaticCredentials("123", "123", "")
 	}
 
-	sess := session.Must(session.NewSession(config))
-	dynamo = dynamodb.New(sess)
+	sess := session.Must(session.NewSession())
+	dynamo := dynamodb.New(sess)
+	xray.AWS(dynamo.Client)
 
 	log.Print("starting the api")
 
@@ -82,7 +84,7 @@ func main() {
 	r.HandleFunc("/health", health).Methods(http.MethodGet)
 
 	s := &http.Server{
-		Handler:      r,
+		Handler:      xray.Handler(xray.NewFixedSegmentNamer("list-api"), r),
 		Addr:         ":8080",
 		WriteTimeout: 10 * time.Second,
 		ReadTimeout:  10 * time.Second,
@@ -117,6 +119,13 @@ func health(w http.ResponseWriter, r *http.Request) {
 // look into query with paging etc
 func list(w http.ResponseWriter, r *http.Request) {
 
+	// Save a copy of this request for debugging.
+	requestDump, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Printf("REQUEST_DUMP: %s\n", string(requestDump))
+
 	i := &dynamodb.ScanInput{
 		TableName: aws.String(TableName),
 	}
@@ -132,7 +141,7 @@ func list(w http.ResponseWriter, r *http.Request) {
 	for k, v := range o.Items {
 		var ck cuddlyKube
 		err = dynamodbattribute.UnmarshalMap(v, &ck)
-		if err  != nil {
+		if err != nil {
 			msg := fmt.Sprintf("error unmarshaling item into cuddlykube, %s ", err.Error())
 			log.Println(msg)
 			continue

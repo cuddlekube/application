@@ -52,7 +52,7 @@
               <li class="list-group-item">Happiness:{{ $server.Happiness }}</li>
             </ul>
           </div>
-          <a href="#" class="btn btn-primary">Feed the server</a>
+          <form action="/feed" method="POST"><input type="hidden" name="ckid" value="ckid"><button type="submit">Feed the server</button></form>
         </div>
       </div>
       {{ end }}

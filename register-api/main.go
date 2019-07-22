@@ -19,6 +19,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-xray-sdk-go/xray"
+
 )
 
 var Ver = "1.0.0"
@@ -88,8 +90,10 @@ func main() {
 		config.Credentials = credentials.NewStaticCredentials("123", "123", "")
 	}
 
-	sess := session.Must(session.NewSession(config))
-	dynamo = dynamodb.New(sess)
+	sess := session.Must(session.NewSession())
+	dynamo := dynamodb.New(sess)
+	xray.AWS(dynamo.Client)
+
 
 	log.Print("starting the api")
 
@@ -98,7 +102,7 @@ func main() {
 	r.HandleFunc("/health", health).Methods(http.MethodGet)
 
 	s := &http.Server{
-		Handler:      r,
+		Handler:      xray.Handler(xray.NewFixedSegmentNamer("list-api"), r),
 		Addr:         ":8080",
 		WriteTimeout: 10 * time.Second,
 		ReadTimeout:  10 * time.Second,
