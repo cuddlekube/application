@@ -91,7 +91,6 @@ func version(w http.ResponseWriter, r *http.Request) {
 			info,
 		},
 	}
-
 	infoJSON, err := json.Marshal(myApp)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -100,7 +99,6 @@ func version(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(infoJSON)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -125,28 +123,32 @@ func list(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	page, err := template.New("list.html").Funcs(template.FuncMap{"mod": func(i, j int) bool { return i%j == 0 }}).ParseFiles("tmpl/list.html")
 	if err != nil {
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	serviceclient := http.Client{}
-
 	req, err := http.NewRequest(http.MethodGet, listAPIURL, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Print("Request error")
+		log.Print(err)
 	}
 	res, getErr := serviceclient.Do(req)
 	if getErr != nil {
-		log.Fatal(getErr)
+		log.Print("Do error")
+		log.Print(getErr)
 	}
 
 	body, readErr := ioutil.ReadAll(res.Body)
 	if readErr != nil {
-		log.Fatal(readErr)
+		log.Print("Read error")
+		log.Print(res.Body)
+		log.Print(string(body))
+		log.Print(readErr)
 	}
 
 	parsedServers := make(map[int]cuddlyKube)
 	if err := json.Unmarshal([]byte(body), &parsedServers); err != nil {
-		panic(err)
+		log.Print(err)
 	}
 
 	data := struct {
