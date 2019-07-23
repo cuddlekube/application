@@ -126,8 +126,16 @@ func list(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("REQUEST_DUMP: %s\n", string(requestDump))
 
+	attributes := make(map[string]*string)
+	attributes["#v"] = aws.String("image")
 	i := &dynamodb.ScanInput{
-		TableName: aws.String(TableName),
+		TableName:                aws.String(TableName),
+		FilterExpression:         aws.String("size(#v) > :num"),
+		ExpressionAttributeNames: attributes,
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":num": {
+				N: aws.String("0"),
+			}},
 	}
 	o, err := dynamo.ScanWithContext(r.Context(), i)
 	if err != nil {

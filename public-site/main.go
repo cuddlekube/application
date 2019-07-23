@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-xray-sdk-go/xray"
@@ -19,6 +20,7 @@ const imageDir = "/img/"
 
 var listAPIURL = "http://list-api%s:8080"
 var feedAPIURL = "http://feed-api%s:8080"
+var registerAPIURL = "http://register-api%s:8080"
 var internalDomain = ""
 
 var Ver = "1.0.0"
@@ -64,6 +66,7 @@ func main() {
 
 	feedAPIURL = fmt.Sprintf(feedAPIURL, internalDomain)
 	listAPIURL = fmt.Sprintf(listAPIURL, internalDomain)
+	registerAPIURL = fmt.Sprintf(registerAPIURL, internalDomain)
 
 	log.Print("starting the api")
 
@@ -185,7 +188,59 @@ func register(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendregistration(w http.ResponseWriter, r *http.Request) {
-	// nothing ye
+	r.ParseForm()
+	age := 0
+	if r.FormValue("age") != "" {
+		age, _ = strconv.Atoi(r.FormValue("age"))
+	}
+	ck := cuddlyKube{
+		Name:    r.FormValue("Name"),
+		Type:    r.FormValue("type"),
+		Service: age,
+		Petname: r.FormValue("pet"),
+		OS:      r.FormValue("os"),
+	}
+
+	log.Print(ck)
+
+	tr := &http.Transport{
+		MaxIdleConns:    10,
+		IdleConnTimeout: 30 * time.Second,
+	}
+
+	client := xray.Client(&http.Client{Transport: tr})
+	buf, err := json.Marshal(ck)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("unable to marshal ck into byte slice: %s", err.Error()))
+		return
+	}
+
+	req, err := http.NewRequest(http.MethodPost, registerAPIURL, bytes.NewBuffer(buf))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("error creating new http request, %s ", err.Error()))
+		return
+	}
+
+	log.Printf("new http request created")
+
+	resp, err := client.Do(req.WithContext(r.Context()))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("error calling the feed api, %s ", err.Error()))
+		return
+	}
+
+	log.Printf("called the feed-api to feed the server ck: %s", ck.CKID)
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	var rCK cuddlyKube
+	err = json.Unmarshal(body, &rCK)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("error unmarshaling validate-api response %s ", err.Error()))
+		return
+	}
+	http.Redirect(w, r, "/list", http.StatusSeeOther)
 }
 
 func feed(w http.ResponseWriter, r *http.Request) {
@@ -238,7 +293,6 @@ func feed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/list", http.StatusSeeOther)
-	respondWithJSON(w, http.StatusOK, rCK)
 }
 
 // helper for responding with error

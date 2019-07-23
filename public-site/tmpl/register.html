@@ -42,30 +42,30 @@
     <p>Please be aware that due to the high number of requests we've been receiving during live demos, there is a manual review stage</p>
   </div>
   <div class="row">
-    <form>
+    <form action="/register" method="POST">
       <div class="form-group">
         <label for="Name">Server name</label>
-        <input type="text" class="form-control" id="Name" aria-describedby="nameHelp" placeholder="Super Awesome Server">
+        <input type="text" class="form-control" id="Name" name="Name" aria-describedby="nameHelp" placeholder="Super Awesome Server">
         <small id="nameHelp" class="form-text text-muted">The regular name your server goes by.</small>
       </div>
       <div class="form-group">
         <label for="type">Server type</label>
-        <input type="text" class="form-control" id="type" aria-describedby="typeHelp" placeholder="Azure D4 v3">
+        <input type="text" class="form-control" id="type" name="type" aria-describedby="typeHelp" placeholder="Azure D4 v3">
         <small id="typeHelp" class="form-text text-muted">The type of server.</small>
       </div>
       <div class="form-group">
         <label for="age">Age</label>
-        <input type="number" class="form-control" id="age" aria-describedby="ageHelp" placeholder="2">
+        <input type="number" class="form-control" id="age" name="age" aria-describedby="ageHelp" placeholder="2">
         <small id="ageHelp" class="form-text text-muted">How many years has your server been in service.</small>
       </div>
       <div class="form-group">
         <label for="pet">Pet pet</label>
-        <input type="text" class="form-control" id="pet" aria-describedby="petHelp" placeholder="Athena">
+        <input type="text" class="form-control" id="pet" name="pet" aria-describedby="petHelp" placeholder="Athena">
         <small id="petHelp" class="form-text text-muted">When your server was treated like a pet, what name did it use?</small>
       </div>
       <div class="form-group">
         <label for="os">Operating System</label>
-        <input type="text" class="form-control" id="os" aria-describedby="osHelp" placeholder="OpenBSD">
+        <input type="text" class="form-control" id="os" name="os" aria-describedby="osHelp" placeholder="OpenBSD">
         <small id="osHelp" class="form-text text-muted">Due to the destruction caused by religious wars, we try to keep servers with different OSs apart.</small>
       </div>
       <button type="submit" class="btn btn-primary">Submit</button>

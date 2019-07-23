@@ -16,7 +16,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-xray-sdk-go/xray"
-
 )
 
 var Ver = "1.0.0"
@@ -88,6 +87,7 @@ func main() {
 
 	sess := session.Must(session.NewSession(config))
 	dynamo = dynamodb.New(sess)
+	xray.AWS(dynamo.Client)
 
 	log.Print("starting the api")
 
