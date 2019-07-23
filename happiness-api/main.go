@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -17,7 +18,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-xray-sdk-go/xray"
-
 )
 
 var Ver = "1.0.0"
@@ -75,7 +75,7 @@ func main() {
 
 	sess := session.Must(session.NewSession(config))
 	dynamo = dynamodb.New(sess)
-
+	xray.AWS(dynamo.Client)
 
 	log.Print("starting the api")
 
@@ -125,7 +125,6 @@ func happiness(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-
 	input := &dynamodb.UpdateItemInput{
 		ExpressionAttributeNames: map[string]*string{
 			"#H": aws.String("happiness"),
@@ -140,14 +139,13 @@ func happiness(w http.ResponseWriter, r *http.Request) {
 				S: aws.String("ck1"),
 			},
 		},
-		ReturnValues: aws.String("ALL_NEW"),
+		ReturnValues:     aws.String("ALL_NEW"),
 		TableName:        aws.String(TableName),
 		UpdateExpression: aws.String("SET #H = #H + :h"),
 	}
 
-
 	// call the put item api
-	output, err := dynamo.UpdateItem(input)
+	output, err := dynamo.UpdateItemWithContext(r.Context(), input)
 	if err != nil {
 		msg := fmt.Sprintf("error putting item into cuddlykube table, %s ", err.Error())
 		log.Println(msg)
