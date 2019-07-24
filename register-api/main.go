@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -91,6 +93,7 @@ func main() {
 
 	sess := session.Must(session.NewSession(config))
 	dynamo = dynamodb.New(sess)
+	xray.AWS(dynamo.Client)
 
 	log.Print("starting the api")
 
@@ -139,8 +142,9 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
+	ck.CKID = strconv.Itoa(rand.Intn(10000000))
 
-	valid, err := validate(ck)
+	valid, err := validate(ck, r)
 	if err != nil {
 		log.Println(err.Error())
 		respondWithError(w, http.StatusBadRequest, err.Error())
@@ -169,7 +173,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// call the put item api
-	_, err = dynamo.PutItem(input)
+	_, err = dynamo.PutItemWithContext(r.Context(), input)
 	if err != nil {
 		msg := fmt.Sprintf("error putting item into cuddlykube table, %s ", err.Error())
 		log.Println(msg)
@@ -180,13 +184,13 @@ func register(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, map[string]string{"message": fmt.Sprintf("item %s, is registered", ck.Name)})
 }
 
-func validate(ck cuddlyKube) (bool, error) {
+func validate(ck cuddlyKube, r *http.Request) (bool, error) {
 	tr := &http.Transport{
 		MaxIdleConns:    10,
 		IdleConnTimeout: 30 * time.Second,
 	}
 
-	client := &http.Client{Transport: tr}
+	client := xray.Client(&http.Client{Transport: tr})
 	buf, err := json.Marshal(ck)
 	if err != nil {
 		return false, fmt.Errorf("unable to marshal ck into byte slice: %s", err.Error())
@@ -199,7 +203,7 @@ func validate(ck cuddlyKube) (bool, error) {
 
 	log.Printf("new http request created")
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req.WithContext(r.Context()))
 	if err != nil {
 		return false, fmt.Errorf("error calling the validate api, %s ", err.Error())
 	}

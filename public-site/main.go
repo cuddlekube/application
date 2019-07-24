@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-xray-sdk-go/xray"
@@ -19,6 +20,7 @@ const imageDir = "/img/"
 
 var listAPIURL = "http://list-api%s:8080"
 var feedAPIURL = "http://feed-api%s:8080"
+var registerAPIURL = "http://register-api%s:8080"
 var internalDomain = ""
 
 var Ver = "1.0.0"
@@ -64,6 +66,7 @@ func main() {
 
 	feedAPIURL = fmt.Sprintf(feedAPIURL, internalDomain)
 	listAPIURL = fmt.Sprintf(listAPIURL, internalDomain)
+	registerAPIURL = fmt.Sprintf(registerAPIURL, internalDomain)
 
 	log.Print("starting the api")
 
@@ -77,9 +80,8 @@ func main() {
 	r.HandleFunc("/health", version)
 	r.HandleFunc("/feed", feed).Methods(http.MethodPost)
 
-
 	s := &http.Server{
-		Handler:       xray.Handler(xray.NewFixedSegmentNamer("public-site"),r),
+		Handler:      xray.Handler(xray.NewFixedSegmentNamer("public-site"), r),
 		Addr:         ":8080",
 		WriteTimeout: 10 * time.Second,
 		ReadTimeout:  10 * time.Second,
@@ -134,13 +136,13 @@ func list(w http.ResponseWriter, r *http.Request) {
 		log.Print(err)
 	}
 
-	serviceclient := http.Client{}
+	serviceclient := xray.Client(&http.Client{})
 	req, err := http.NewRequest(http.MethodGet, listAPIURL, nil)
 	if err != nil {
 		log.Print("Request error")
 		log.Print(err)
 	}
-	res, getErr := serviceclient.Do(req)
+	res, getErr := serviceclient.Do(req.WithContext(r.Context()))
 	if getErr != nil {
 		log.Print("Do error")
 		log.Print(getErr)
@@ -186,25 +188,34 @@ func register(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendregistration(w http.ResponseWriter, r *http.Request) {
-	// nothing ye
-}
+	r.ParseForm()
+	age := 0
+	if r.FormValue("age") != "" {
+		age, _ = strconv.Atoi(r.FormValue("age"))
+	}
+	ck := cuddlyKube{
+		Name:    r.FormValue("Name"),
+		Type:    r.FormValue("type"),
+		Service: age,
+		Petname: r.FormValue("pet"),
+		OS:      r.FormValue("os"),
+	}
 
-func feed (w http.ResponseWriter, r *http.Request) {
-	var ck cuddlyKube
+	log.Print(ck)
 
 	tr := &http.Transport{
 		MaxIdleConns:    10,
 		IdleConnTimeout: 30 * time.Second,
 	}
 
-	client := &http.Client{Transport: tr}
+	client := xray.Client(&http.Client{Transport: tr})
 	buf, err := json.Marshal(ck)
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("unable to marshal ck into byte slice: %s", err.Error()))
 		return
 	}
 
-	req, err := http.NewRequest(http.MethodPost, feedAPIURL, bytes.NewBuffer(buf))
+	req, err := http.NewRequest(http.MethodPost, registerAPIURL, bytes.NewBuffer(buf))
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("error creating new http request, %s ", err.Error()))
 		return
@@ -212,7 +223,7 @@ func feed (w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("new http request created")
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req.WithContext(r.Context()))
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("error calling the feed api, %s ", err.Error()))
 		return
@@ -229,8 +240,59 @@ func feed (w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("error unmarshaling validate-api response %s ", err.Error()))
 		return
 	}
+	http.Redirect(w, r, "/list", http.StatusSeeOther)
+}
 
-	respondWithJSON(w, http.StatusOK, rCK)
+func feed(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	var ck cuddlyKube
+	if r.FormValue("ckid") != "" {
+		ck = cuddlyKube{
+			CKID: r.FormValue("ckid"),
+		}
+	} else {
+		respondWithError(w, http.StatusBadRequest, "Invalid form submission")
+		return
+	}
+
+	tr := &http.Transport{
+		MaxIdleConns:    10,
+		IdleConnTimeout: 30 * time.Second,
+	}
+
+	client := xray.Client(&http.Client{Transport: tr})
+	buf, err := json.Marshal(ck)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("unable to marshal ck into byte slice: %s", err.Error()))
+		return
+	}
+
+	req, err := http.NewRequest(http.MethodPost, feedAPIURL, bytes.NewBuffer(buf))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("error creating new http request, %s ", err.Error()))
+		return
+	}
+
+	log.Printf("new http request created")
+
+	resp, err := client.Do(req.WithContext(r.Context()))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("error calling the feed api, %s ", err.Error()))
+		return
+	}
+
+	log.Printf("called the feed-api to feed the server ck: %s", ck.CKID)
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	var rCK cuddlyKube
+	err = json.Unmarshal(body, &rCK)
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, fmt.Sprintf("error unmarshaling validate-api response %s ", err.Error()))
+		return
+	}
+	http.Redirect(w, r, "/list", http.StatusSeeOther)
 }
 
 // helper for responding with error

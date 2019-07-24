@@ -19,7 +19,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-xray-sdk-go/xray"
-
 )
 
 var Ver = "1.0.0"
@@ -139,8 +138,7 @@ func feed(w http.ResponseWriter, r *http.Request) {
 		IdleConnTimeout: 30 * time.Second,
 	}
 
-	client := &http.Client{Transport: tr}
-
+	client := xray.Client(&http.Client{Transport: tr})
 	buf := []byte(`{"ckid":"` + ck.CKID + `"}`)
 
 	req, err := http.NewRequest(http.MethodPost, happinessURL, bytes.NewBuffer(buf))
@@ -153,7 +151,7 @@ func feed(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("new http request created")
 
-	resp, err := client.Do(req)
+	resp, err := client.Do(req.WithContext(r.Context()))
 	if err != nil {
 		msg := fmt.Sprintf("error calling the happiness api, %s ", err.Error())
 		log.Println(msg)
