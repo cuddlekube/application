@@ -71,20 +71,6 @@ services:
     ports:
     - 8084:8080
 
-  dummy-passthrough-api-1:
-    image: dummy-passthrough-api
-    build:
-      context: dummy-passthrough-api/
-      args:
-      - app_version=v-compose-test
-      - commit-sha=sha-compose-test
-    command:
-    - -local
-    - -endpoint-url
-    - "http://dynamolocal:8000"
-    ports:
-    - 8085:8080
-
   public-site:
     image: public-site
     build:
